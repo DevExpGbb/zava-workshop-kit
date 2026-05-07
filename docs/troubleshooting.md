@@ -35,6 +35,17 @@
 **Cause:** `apm-policy.yml` in `YOUR_ORG/.github` still has `YOUR_ORG` placeholder (literal).
 **Fix:** Edit `YOUR_ORG/.github/apm-policy.yml`, replace `YOUR_ORG` literal with your actual org slug, commit.
 
+### "supply chain attack detected" / lockfile content hash mismatch
+**Cause:** Each org publishes its own release tarball when triggering `release.yml` on a tag. Even at the same version (e.g. `v5.0.1`), `YOUR_ORG/zava-agent-config` and `DevExpGbb/zava-agent-config` produce different SHA256 hashes. The lockfile inherited from the source org will fail audit against your fork's content.
+**Fix:** Bootstrap.sh now regenerates `apm.lock.yaml` automatically post-rewrite if the `apm` CLI is on PATH. If you ran an older bootstrap or apm wasn't installed:
+```bash
+cd YOUR_FORK_OF_zava-storefront
+apm install --update
+git commit -am "chore(apm): regenerate lockfile against YOUR_ORG plugins"
+git push
+```
+Requires `apm` CLI: `brew install microsoft/apm/apm` or see [apm.dev](https://apm.dev).
+
 ## `gh aw` / workflow failures
 
 ### Workflow runs immediately fail with "no token"
