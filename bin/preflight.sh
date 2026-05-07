@@ -37,6 +37,13 @@ else
   ok "gh CLI authenticated as $(gh api user --jq .login)"
 fi
 
+# 1b. apm CLI present (needed by bootstrap.sh to regenerate lockfile)
+if ! command -v apm >/dev/null 2>&1; then
+  warn "apm CLI not installed — bootstrap.sh will skip lockfile regen and you'll need to run 'apm install --update' manually post-bootstrap (brew install microsoft/apm/apm)"
+else
+  ok "apm CLI present ($(apm --version 2>&1 | head -1))"
+fi
+
 # 2. org exists + we can read it
 if ! gh api "orgs/$ORG" >/dev/null 2>&1; then
   fail "org '$ORG' not visible — does it exist? are you a member?"
