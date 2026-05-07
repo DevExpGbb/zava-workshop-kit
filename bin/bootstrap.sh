@@ -1,21 +1,48 @@
 #!/usr/bin/env bash
 # bootstrap.sh — fork zava-* repos into your org and rewrite refs
-# Usage: ./bin/bootstrap.sh --org=YOUR_ORG [--source-org=DevExpGbb]
+# Usage: ./bin/bootstrap.sh --org=YOUR_ORG [--source-org=DevExpGbb] [--dry-run] [--force]
 set -euo pipefail
 
 ORG=""
 SOURCE_ORG="DevExpGbb"
 SKIP_TEMPLATE=true   # trainees use "Use this template" instead
+DRY_RUN=false
+FORCE=false
 
 for a in "$@"; do
   case "$a" in
     --org=*) ORG="${a#--org=}" ;;
     --source-org=*) SOURCE_ORG="${a#--source-org=}" ;;
     --include-template) SKIP_TEMPLATE=false ;;
+    --dry-run) DRY_RUN=true ;;
+    --force) FORCE=true ;;
     *) echo "unknown arg: $a"; exit 2 ;;
   esac
 done
-[[ -z "$ORG" ]] && { echo "usage: $0 --org=<github-org> [--source-org=DevExpGbb]"; exit 2; }
+[[ -z "$ORG" ]] && { echo "usage: $0 --org=<github-org> [--source-org=DevExpGbb] [--dry-run] [--force]"; exit 2; }
+
+# Refuse to bootstrap into the source org — this would re-fork DevExpGbb back
+# into itself, rewrite refs to itself, and overwrite the live apm-policy.yml
+# with the template (a v1.2.0 → v1.2.0 no-op only if templates are in sync).
+if [[ "$ORG" == "$SOURCE_ORG" ]]; then
+  echo "❌ Refusing to bootstrap into source org '$SOURCE_ORG'."
+  echo "   Pass --org=<a-different-org> (the consumer org) and keep --source-org=$SOURCE_ORG."
+  exit 2
+fi
+
+if $DRY_RUN; then
+  echo "🔍 DRY-RUN MODE — no GitHub state will be modified."
+  echo
+fi
+
+# Helper: echo command in dry-run mode, execute otherwise.
+run() {
+  if $DRY_RUN; then
+    echo "  [DRYRUN] $*"
+  else
+    "$@"
+  fi
+}
 
 WORK="${WORK:-/tmp/zava-bootstrap-$ORG}"
 mkdir -p "$WORK" && cd "$WORK"
@@ -33,13 +60,14 @@ for r in "${REPOS[@]}"; do
     echo "  ✅ $ORG/$r already exists, skipping fork"
   else
     echo "  → forking $SOURCE_ORG/$r → $ORG/$r"
-    gh repo fork "$SOURCE_ORG/$r" --org "$ORG" --default-branch-only --clone=false
-    sleep 5  # let GitHub finish the fork
+    run gh repo fork "$SOURCE_ORG/$r" --org "$ORG" --default-branch-only --clone=false
+    $DRY_RUN || sleep 5  # let GitHub finish the fork
   fi
 done
 
 # 2. Rewrite refs in each fork: $SOURCE_ORG/ → $ORG/
-for r in "${REPOS[@]}"; do
+$DRY_RUN && { echo; echo "🔍 DRY-RUN: skipping ref-rewrite phase (would clone+sed each fork)"; }
+$DRY_RUN || for r in "${REPOS[@]}"; do
   echo
   echo "--- rewriting refs in $ORG/$r ---"
   rm -rf "$WORK/$r"
@@ -104,53 +132,82 @@ echo
 echo "--- org policy: $ORG/.github ---"
 if ! gh api "repos/$ORG/.github" >/dev/null 2>&1; then
   echo "  → creating $ORG/.github"
-  gh repo create "$ORG/.github" --public --description "Org defaults for $ORG" --add-readme
-  sleep 3
+  run gh repo create "$ORG/.github" --public --description "Org defaults for $ORG" --add-readme
+  $DRY_RUN || sleep 3
 fi
-rm -rf "$WORK/.github"
-gh repo clone "$ORG/.github" "$WORK/.github" -- --quiet
-cd "$WORK/.github"
-mkdir -p .
-KIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cp "$KIT_DIR/templates/apm-policy.yml" ./apm-policy.yml
-if git diff --quiet && [[ ! -n "$(git status --porcelain)" ]]; then
-  echo "  ✅ apm-policy.yml already in place"
+if $DRY_RUN; then
+  echo "  [DRYRUN] would clone $ORG/.github, template apm-policy.yml (YOUR_ORG → $ORG), back up any existing policy, commit + push"
 else
-  git add apm-policy.yml
-  git -c user.name="Zava Workshop Kit" -c user.email="zava-kit@example.com" \
-    commit -m "chore: org-level apm-policy.yml from zava-workshop-kit"
-  git push origin HEAD || true
-  echo "  ✅ apm-policy.yml committed"
-fi
-cd "$WORK"
+  rm -rf "$WORK/.github"
+  gh repo clone "$ORG/.github" "$WORK/.github" -- --quiet
+  cd "$WORK/.github"
+  KIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-# 4. Trigger marketplace release on the fork (so your org has its own v5.0.1 release)
-echo
-echo "--- triggering release on $ORG/zava-agent-config ---"
-LATEST_TAG=$(gh api "repos/$SOURCE_ORG/zava-agent-config/releases/latest" --jq .tag_name 2>/dev/null || echo "")
-if [[ -z "$LATEST_TAG" ]]; then
-  echo "  ⚠️  could not read latest tag from source — skipping release trigger"
-elif gh api "repos/$ORG/zava-agent-config/releases/tags/$LATEST_TAG" >/dev/null 2>&1; then
-  echo "  ✅ release $LATEST_TAG already published in $ORG"
-else
-  cd "$WORK/zava-agent-config"
-  if ! git tag | grep -q "^$LATEST_TAG$"; then
-    echo "  → fetching tags"
-    git fetch --tags origin || true
+  # Back up existing policy before overwriting (safety net for orgs that already
+  # have a curated apm-policy.yml — avoids silent loss of governance config).
+  if [[ -f apm-policy.yml ]] && ! $FORCE; then
+    backup="apm-policy.yml.bak.$(date +%Y%m%d-%H%M%S)"
+    cp apm-policy.yml "$backup"
+    echo "  ⚠️  existing apm-policy.yml found — backed up to $backup"
+    echo "     diff after templating below; if it doesn't look right, restore from $backup or rerun with --force to skip backup"
   fi
-  if git tag | grep -q "^$LATEST_TAG$"; then
-    git push origin "$LATEST_TAG" 2>/dev/null || echo "  (tag push: may already exist)"
-    echo "  → triggering release.yml workflow"
-    gh workflow run release.yml --repo "$ORG/zava-agent-config" --ref "$LATEST_TAG" 2>/dev/null \
-      || echo "  ⚠️  workflow_dispatch failed — push tag manually or trigger from UI"
+
+  # Template YOUR_ORG → $ORG via sed (the previous bare `cp` left placeholders
+  # in the deployed policy, which is a runtime failure).
+  sed "s|YOUR_ORG|$ORG|g" "$KIT_DIR/templates/apm-policy.yml" > apm-policy.yml
+
+  if [[ -f "${backup:-/dev/null}" ]] && diff -q apm-policy.yml "$backup" >/dev/null 2>&1; then
+    echo "  ✅ apm-policy.yml unchanged after template"
+    rm -f "$backup"
+  elif git diff --quiet apm-policy.yml 2>/dev/null; then
+    echo "  ✅ apm-policy.yml already in place"
   else
-    echo "  ⚠️  tag $LATEST_TAG not in local clone — fork may not have inherited tags"
-    echo "      run: git fetch upstream --tags && git push origin --tags"
+    git add apm-policy.yml
+    git -c user.name="Zava Workshop Kit" -c user.email="zava-kit@example.com" \
+      commit -m "chore: org-level apm-policy.yml from zava-workshop-kit"
+    git push origin HEAD || true
+    echo "  ✅ apm-policy.yml committed"
   fi
   cd "$WORK"
 fi
 
+# 4. Trigger marketplace release on the fork (so your org has its own v5.0.1 release)
 echo
-echo "=== ✅ bootstrap complete ==="
-echo "   workspace: $WORK"
-echo "   next: ./bin/smoke.sh --org=$ORG"
+echo "--- triggering release on $ORG/zava-agent-config ---"
+if $DRY_RUN; then
+  echo "  [DRYRUN] would push the latest upstream tag and trigger release.yml on $ORG/zava-agent-config"
+else
+  LATEST_TAG=$(gh api "repos/$SOURCE_ORG/zava-agent-config/releases/latest" --jq .tag_name 2>/dev/null || echo "")
+  if [[ -z "$LATEST_TAG" ]]; then
+    echo "  ⚠️  could not read latest tag from source — skipping release trigger"
+  elif gh api "repos/$ORG/zava-agent-config/releases/tags/$LATEST_TAG" >/dev/null 2>&1; then
+    echo "  ✅ release $LATEST_TAG already published in $ORG"
+  else
+    cd "$WORK/zava-agent-config"
+    if ! git tag | grep -q "^$LATEST_TAG$"; then
+      echo "  → fetching tags"
+      git fetch --tags origin || true
+    fi
+    if git tag | grep -q "^$LATEST_TAG$"; then
+      git push origin "$LATEST_TAG" 2>/dev/null || echo "  (tag push: may already exist)"
+      echo "  → triggering release.yml workflow"
+      gh workflow run release.yml --repo "$ORG/zava-agent-config" --ref "$LATEST_TAG" 2>/dev/null \
+        || echo "  ⚠️  workflow_dispatch failed — push tag manually or trigger from UI"
+    else
+      echo "  ⚠️  tag $LATEST_TAG not in local clone — fork may not have inherited tags"
+      echo "      run: git fetch upstream --tags && git push origin --tags"
+    fi
+    cd "$WORK"
+  fi
+fi
+
+echo
+if $DRY_RUN; then
+  echo "=== 🔍 dry-run complete (no state modified) ==="
+  echo "   re-run without --dry-run to apply"
+else
+  echo "=== ✅ bootstrap complete ==="
+  echo "   workspace: $WORK"
+  echo "   next: ./bin/smoke.sh --org=$ORG"
+  echo "   undo: ./bin/teardown.sh --org=$ORG"
+fi
