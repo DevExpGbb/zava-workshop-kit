@@ -2,7 +2,7 @@
 
 > **Deploy the Zava Agentic SDLC Workshop into your own GitHub org in 15 minutes.**
 
-This kit is the one-stop entry point for org administrators (or curious individuals) who want to run the same agentic SDLC workshop that ships with [The Agentic SDLC Handbook](https://danielmeppiel.github.io/agentic-sdlc-handbook/) — locally, in their own GitHub org, with no dependency on Microsoft demo orgs.
+This kit is the one-stop entry point for org administrators (or curious individuals) who want to stand up the Zava agentic SDLC workshop in their own GitHub org — self-contained, no dependency on any external demo org.
 
 ## What you get
 
