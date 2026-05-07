@@ -76,7 +76,12 @@ for rs in tag-immutability apm-audit-required; do
   if echo "$rulesets_json" | grep -q "\"name\":\"$rs\""; then
     ok "ruleset '$rs' present"
   else
-    warn "ruleset '$rs' missing — apply from templates/ or run bootstrap"
+    # bootstrap.sh does NOT apply rulesets (privilege boundary: requires
+    # owner-level perms; bootstrap intentionally limits itself to
+    # owner-or-admin actions). Treat missing rulesets as a hard error so the
+    # admin applies them via gh api before bootstrap (Step 4 in
+    # ORG-ADMIN-SETUP.md).
+    fail "ruleset '$rs' missing — apply from templates/$rs.ruleset.json (see ORG-ADMIN-SETUP.md Step 4)"
   fi
 done
 

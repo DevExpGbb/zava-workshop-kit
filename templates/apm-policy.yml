@@ -3,37 +3,52 @@
 # This file lives at YOUR_ORG/.github/apm-policy.yml and is enforced by
 # `apm install` and `apm audit` across all repos in the org.
 #
-# Change `org_name` placeholder to your actual org slug when copied — bootstrap.sh
-# does this automatically. If you're authoring by hand, replace YOUR_ORG below.
+# bootstrap.sh templates the YOUR_ORG placeholder to your actual org slug.
+# If you're authoring by hand, replace YOUR_ORG below.
+#
+# Schema mirrors the live DevExpGbb policy
+# (https://github.com/DevExpGbb/.github/blob/main/apm-policy.yml) with workshop
+# additions (poisoned-tracing-skill explicit deny, zava-agent-config allow).
+# Keep the structural fields (enforcement, cache, dependencies, mcp,
+# compilation, manifest) in sync with the live policy as it evolves.
 
-version: 1
+name: zava-workshop-org-policy
+version: "1.2.0"
+enforcement: block
 
-# Allowlist: which plugin sources are trusted in this org.
-# A plugin pin must match one of these prefixes to install.
-allow:
-  - "YOUR_ORG/zava-agent-config/plugins/*"
-  - "microsoft/apm/plugins/*"
+cache:
+  ttl: 3600
 
-# Blocklist: explicit denies (always wins over allow).
-deny:
-  # Block the supply chain demo poison fixture from accidental install.
-  - "*/poisoned-tracing-skill"
+dependencies:
+  allow:
+    - "YOUR_ORG/**"
+    - "DevExpGbb/zava-agent-config/**"
+    - "microsoft/**"
+    - "github/**"
+  deny:
+    # Block the supply chain demo poison fixture from accidental install.
+    - "*/poisoned-tracing-skill"
+  require_resolution: project-wins
 
-# Audit policy: rules that `apm audit` checks on every install + in CI.
-audit:
-  # Reject any skill containing zero-width characters in SKILL.md.
-  - rule: no-hidden-unicode
-    severity: error
+mcp:
+  allow:
+    - "io.github.github/*"
+    - "io.github.modelcontextprotocol/*"
+  deny: []
+  transport:
+    allow: [stdio, http]
+  self_defined: warn
+  trust_transitive: false
 
-  # Require pinned versions (no @main, no floating refs).
-  - rule: pinned-versions-only
-    severity: error
+compilation:
+  target:
+    allow: [vscode, claude, all]
+  strategy:
+    enforce: distributed
+  source_attribution: true
 
-  # Warn on any skill that reads files outside its own directory.
-  - rule: scoped-fs-access
-    severity: warn
-
-# Genesis (governance bootstrap) — the sigil of org-blessed primitives.
-# This pins the canonical genesis kit; consumers can extend in their own apm.yml.
-genesis:
-  pin: "DevExpGbb/zava-agent-config/plugins/secure-baseline#v5.0.1"
+manifest:
+  required_fields: [version, description]
+  scripts: allow
+  content_types:
+    allow: [instructions, skill, hybrid, prompts]

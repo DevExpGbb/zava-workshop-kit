@@ -58,6 +58,8 @@ gh secret set GH_AW_PLUGINS_TOKEN  --org YOUR_ORG --visibility=all
 
 Or skip this step and let `bin/bootstrap.sh` prompt you interactively.
 
+↩️ **To undo:** `gh secret remove COPILOT_GITHUB_TOKEN --org YOUR_ORG && gh secret remove GH_AW_PLUGINS_TOKEN --org YOUR_ORG`.
+
 ---
 
 ## Step 4 — Apply rulesets
@@ -72,6 +74,8 @@ gh api orgs/YOUR_ORG/rulesets --method POST \
   --input templates/tag-immutability.ruleset.json
 ```
 
+↩️ **To undo:** find the ruleset id with `gh api orgs/YOUR_ORG/rulesets --jq '.[] | select(.name=="tag-immutability") | .id'`, then `gh api orgs/YOUR_ORG/rulesets/<id> --method DELETE`.
+
 ### `apm-audit-required` (recommended)
 Requires the `apm-audit` status check on PRs that modify `apm.yml` in any repo pinning `zava-agent-config`. Demonstrated in D2 Governance.
 
@@ -80,11 +84,17 @@ gh api orgs/YOUR_ORG/rulesets --method POST \
   --input templates/apm-audit-required.ruleset.json
 ```
 
+↩️ **To undo:** same pattern as `tag-immutability` above (replace the name).
+
 ---
 
 ## Step 5 — Run the bootstrap
 
 ```bash
+# First, dry-run to see exactly what bootstrap will do (no GitHub state changes):
+./bin/bootstrap.sh --org=YOUR_ORG --dry-run
+
+# Then run for real:
 ./bin/bootstrap.sh --org=YOUR_ORG
 ```
 
@@ -96,10 +106,17 @@ What this does (in order):
 4. (Skipped: workshop-template — trainees use **"Use this template"** directly against `DevExpGbb/zava-skills-workshop-template`)
 5. Rewrites `apm.yml` and gh-aw workflow refs in your forks: `DevExpGbb/` → `YOUR_ORG/`
 6. Pushes the rewrites as a single commit on `main`
-7. Creates the org `.github` repo (if missing) and adds `apm-policy.yml`
+7. Creates the org `.github` repo (if missing) and adds `apm-policy.yml`. If you already have an `apm-policy.yml`, bootstrap backs it up to `apm-policy.yml.bak.<timestamp>` first — diff before discarding the backup.
 8. Triggers the `release.yml` workflow on `YOUR_ORG/zava-agent-config` to publish `v5.0.1` in your org's GitHub Releases
 
 **The script is idempotent.** Re-run it safely; it skips work that's already done.
+
+**Safety guards:**
+- Refuses to run if `--org == --source-org` (won't blow back into the source org).
+- `--dry-run` prints every fork/clone/push it would do without executing.
+- Any existing `.github/apm-policy.yml` is backed up before overwrite (use `--force` to skip backup).
+
+↩️ **To undo this step:** `./bin/teardown.sh --org=YOUR_ORG` removes the forks and reverts the policy commit.
 
 ---
 
