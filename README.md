@@ -74,6 +74,8 @@ GH_TOKEN=$GH_TOKEN_TARGET ./bin/smoke.sh --org=YOUR_EMU_ORG    # verify
 
 - [`ORG-ADMIN-SETUP.md`](ORG-ADMIN-SETUP.md) — the full 7-step runbook with prereqs, token recipes, and ruleset config (path A)
 - [`docs/emu-setup.md`](docs/emu-setup.md) — bridge-engineer guide for EMU enterprises (path B)
+- [`docs/live-workshop-runbook.md`](docs/live-workshop-runbook.md) — onsite delivery runbook with T-7 / T-1 / T-0 timeline + 4-mode fallback ladder
+- [`docs/manual-mirror-cheatsheet.md`](docs/manual-mirror-cheatsheet.md) — copy-paste git commands when `bootstrap-emu.sh` is unavailable
 - [`INVENTORY.md`](INVENTORY.md) — what each repo does, the dependency graph, and how the pieces compose
 - [`docs/tokens.md`](docs/tokens.md) — exact PAT scopes for the two required org secrets
 - [`docs/copilot-plan.md`](docs/copilot-plan.md) — which GitHub Copilot SKU you need and why

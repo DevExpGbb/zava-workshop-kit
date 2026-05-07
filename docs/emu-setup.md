@@ -100,3 +100,7 @@ GH_TOKEN_TARGET=$GH_TOKEN_TARGET ./bin/teardown-emu.sh --target-org=YOUR_EMU_ORG
 ## Verification status
 
 This script is **structurally tested** (shellcheck clean, dry-run validates flow) but has **not** been end-to-end verified against a real EMU enterprise (the author does not have EMU access). The public-org [`bootstrap.sh`](../bin/bootstrap.sh) is fully E2E-verified and shares 80% of the post-clone logic. Report any issues at [DevExpGbb/zava-workshop-kit/issues](https://github.com/DevExpGbb/zava-workshop-kit/issues).
+
+## When to use this vs. the manual mirror path
+
+If you're delivering a **scheduled, customer-facing onsite workshop**, read [`live-workshop-runbook.md`](live-workshop-runbook.md) first. The recommended pattern is to pre-stage the platform org **5–7 days before the workshop** using this script, smoke-test it, and treat workshop morning as a "no new infrastructure" window. If this script fails during pre-staging, fall back to [`manual-mirror-cheatsheet.md`](manual-mirror-cheatsheet.md) — the same operations done by hand in ~30 minutes.
