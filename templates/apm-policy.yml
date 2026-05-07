@@ -1,0 +1,39 @@
+# Default APM policy for the Zava workshop bundle.
+#
+# This file lives at YOUR_ORG/.github/apm-policy.yml and is enforced by
+# `apm install` and `apm audit` across all repos in the org.
+#
+# Change `org_name` placeholder to your actual org slug when copied — bootstrap.sh
+# does this automatically. If you're authoring by hand, replace YOUR_ORG below.
+
+version: 1
+
+# Allowlist: which plugin sources are trusted in this org.
+# A plugin pin must match one of these prefixes to install.
+allow:
+  - "YOUR_ORG/zava-agent-config/plugins/*"
+  - "microsoft/apm/plugins/*"
+
+# Blocklist: explicit denies (always wins over allow).
+deny:
+  # Block the supply chain demo poison fixture from accidental install.
+  - "*/poisoned-tracing-skill"
+
+# Audit policy: rules that `apm audit` checks on every install + in CI.
+audit:
+  # Reject any skill containing zero-width characters in SKILL.md.
+  - rule: no-hidden-unicode
+    severity: error
+
+  # Require pinned versions (no @main, no floating refs).
+  - rule: pinned-versions-only
+    severity: error
+
+  # Warn on any skill that reads files outside its own directory.
+  - rule: scoped-fs-access
+    severity: warn
+
+# Genesis (governance bootstrap) — the sigil of org-blessed primitives.
+# This pins the canonical genesis kit; consumers can extend in their own apm.yml.
+genesis:
+  pin: "DevExpGbb/zava-agent-config/plugins/secure-baseline#v5.0.1"
