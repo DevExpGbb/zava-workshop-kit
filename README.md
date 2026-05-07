@@ -4,6 +4,8 @@
 
 This kit is the one-stop entry point for org administrators (or curious individuals) who want to stand up the Zava agentic SDLC workshop in their own GitHub org — self-contained, no dependency on any external demo org.
 
+> **Scope:** assumes **GitHub** (or GitHub Enterprise Cloud) + a **GitHub Copilot Business/Enterprise** plan in the consumer org. The bootstrap forks a deliberately compromised `poisoned-tracing-skill` repo as a supply-chain demo fixture — keep workshop deployments in a non-production org. This is an experiment / training kit, not a regulated-production runbook.
+
 ## What you get
 
 After running the bootstrap, your org owns four working repos:
