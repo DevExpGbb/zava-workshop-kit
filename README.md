@@ -19,7 +19,27 @@ After running the bootstrap, your org owns four working repos:
 
 Plus org-level configuration: 2 secrets, 2 rulesets, 1 `apm-policy.yml`.
 
-## Quickstart for org owners
+## Choose your deployment path
+
+```
+┌───────────────────────────────────────────────────────────────────┐
+│ Where are you deploying the workshop?                             │
+├───────────────────────────────────────────────────────────────────┤
+│ A. Public github.com org (free / Team / Enterprise without EMU)   │
+│    → bin/bootstrap.sh + bin/teardown.sh                           │
+│    → see Quickstart below                                         │
+│                                                                   │
+│ B. GitHub Enterprise Cloud with EMU                               │
+│    (Enterprise Managed Users — identity-isolated, no public repos)│
+│    → bin/bootstrap-emu.sh + bin/teardown-emu.sh                   │
+│    → requires bridge engineer with TWO PATs (source + EMU)        │
+│    → see docs/emu-setup.md                                        │
+└───────────────────────────────────────────────────────────────────┘
+```
+
+**Not sure?** If your enterprise admin minted your account (handle has a `_company` suffix), you're EMU — use path B. If you can fork `DevExpGbb/zava-agent-config` to your org from the GitHub UI, you're not EMU — use path A.
+
+## Quickstart — Path A (public github.com org)
 
 ```bash
 # 1. Clone this kit
@@ -37,9 +57,23 @@ gh repo clone DevExpGbb/zava-workshop-kit && cd zava-workshop-kit
 
 If `smoke.sh` exits green, your workshop is live. Hand the trainees [`zava-skills-workshop-template`](#zava-skills-workshop-template-row-above) and tell them to click **"Use this template"**.
 
+## Quickstart — Path B (EMU enterprise)
+
+See [`docs/emu-setup.md`](docs/emu-setup.md) for the full bridge-engineer guide. Short version:
+
+```bash
+export GH_TOKEN_SOURCE=ghp_personal_xxx     # personal github.com PAT (read DevExpGbb)
+export GH_TOKEN_TARGET=ghp_emu_xxx           # EMU PAT (admin on target org)
+
+./bin/bootstrap-emu.sh --target-org=YOUR_EMU_ORG --dry-run     # preview
+./bin/bootstrap-emu.sh --target-org=YOUR_EMU_ORG               # apply
+GH_TOKEN=$GH_TOKEN_TARGET ./bin/smoke.sh --org=YOUR_EMU_ORG    # verify
+```
+
 ## Read next
 
-- [`ORG-ADMIN-SETUP.md`](ORG-ADMIN-SETUP.md) — the full 7-step runbook with prereqs, token recipes, and ruleset config
+- [`ORG-ADMIN-SETUP.md`](ORG-ADMIN-SETUP.md) — the full 7-step runbook with prereqs, token recipes, and ruleset config (path A)
+- [`docs/emu-setup.md`](docs/emu-setup.md) — bridge-engineer guide for EMU enterprises (path B)
 - [`INVENTORY.md`](INVENTORY.md) — what each repo does, the dependency graph, and how the pieces compose
 - [`docs/tokens.md`](docs/tokens.md) — exact PAT scopes for the two required org secrets
 - [`docs/copilot-plan.md`](docs/copilot-plan.md) — which GitHub Copilot SKU you need and why
