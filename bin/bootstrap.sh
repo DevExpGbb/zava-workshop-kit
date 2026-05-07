@@ -44,6 +44,11 @@ run() {
   fi
 }
 
+# Capture KIT_DIR before any cd — BASH_SOURCE[0] may be relative (e.g.
+# "./bin/bootstrap.sh"), which would no longer resolve after we cd into $WORK
+# or $WORK/.github later in the script.
+KIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
 WORK="${WORK:-/tmp/zava-bootstrap-$ORG}"
 mkdir -p "$WORK" && cd "$WORK"
 
@@ -62,6 +67,16 @@ for r in "${REPOS[@]}"; do
     echo "  → forking $SOURCE_ORG/$r → $ORG/$r"
     run gh repo fork "$SOURCE_ORG/$r" --org "$ORG" --default-branch-only --clone=false
     $DRY_RUN || sleep 5  # let GitHub finish the fork
+  fi
+
+  # Forks have GitHub Actions disabled until the user clicks "I understand my
+  # workflows, go ahead and enable them" in the UI. Enable them via API so that
+  # tag-push triggers (release.yml) and label-triggers (pr-review-panel) fire
+  # on the fork without manual intervention.
+  if ! $DRY_RUN; then
+    echo '{"enabled":true,"allowed_actions":"all"}' \
+      | gh api -X PUT "repos/$ORG/$r/actions/permissions" --input - >/dev/null 2>&1 \
+      || echo "  ⚠️  could not enable Actions on $ORG/$r — enable manually via repo Settings → Actions"
   fi
 done
 
@@ -146,7 +161,6 @@ else
   rm -rf "$WORK/.github"
   gh repo clone "$ORG/.github" "$WORK/.github" -- --quiet
   cd "$WORK/.github"
-  KIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
   # Back up existing policy before overwriting (safety net for orgs that already
   # have a curated apm-policy.yml — avoids silent loss of governance config).
@@ -164,14 +178,20 @@ else
   if [[ -f "${backup:-/dev/null}" ]] && diff -q apm-policy.yml "$backup" >/dev/null 2>&1; then
     echo "  ✅ apm-policy.yml unchanged after template"
     rm -f "$backup"
-  elif git diff --quiet apm-policy.yml 2>/dev/null; then
-    echo "  ✅ apm-policy.yml already in place"
   else
+    # Stage first, then check for diff against HEAD. Plain `git diff --quiet
+    # apm-policy.yml` returns 0 (silently) when the file is untracked — which
+    # incorrectly classified a brand-new policy file as "already in place" and
+    # silently skipped the commit, leaving $ORG/.github with no policy at all.
     git add apm-policy.yml
-    git -c user.name="Zava Workshop Kit" -c user.email="zava-kit@example.com" \
-      commit -m "chore: org-level apm-policy.yml from zava-workshop-kit"
-    git push origin HEAD || true
-    echo "  ✅ apm-policy.yml committed"
+    if git diff --cached --quiet; then
+      echo "  ✅ apm-policy.yml already in place"
+    else
+      git -c user.name="Zava Workshop Kit" -c user.email="zava-kit@example.com" \
+        commit -m "chore: org-level apm-policy.yml from zava-workshop-kit"
+      git push origin HEAD || true
+      echo "  ✅ apm-policy.yml committed"
+    fi
   fi
   cd "$WORK"
 fi
