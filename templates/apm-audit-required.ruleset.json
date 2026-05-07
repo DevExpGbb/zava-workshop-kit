@@ -4,11 +4,17 @@
   "enforcement": "active",
   "conditions": {
     "ref_name": {
-      "include": ["~DEFAULT_BRANCH"],
+      "include": [
+        "~DEFAULT_BRANCH"
+      ],
       "exclude": []
     },
     "repository_name": {
-      "include": ["zava-storefront", "zava-skills-workshop-template", "poisoned-tracing-skill"],
+      "include": [
+        "zava-storefront",
+        "zava-skills-workshop-template",
+        "poisoned-tracing-skill"
+      ],
       "exclude": [],
       "protected": true
     }
@@ -30,8 +36,7 @@
         "strict_required_status_checks_policy": false,
         "required_status_checks": [
           {
-            "context": "apm-audit",
-            "integration_id": null
+            "context": "apm-audit"
           }
         ]
       }
