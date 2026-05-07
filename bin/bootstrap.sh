@@ -105,12 +105,17 @@ Repinning marketplace + workflow imports to your org."
   if [[ -f apm.yml ]] && command -v apm >/dev/null 2>&1; then
     echo "  → regenerating apm.lock.yaml against $ORG content"
     if apm install --update >/dev/null 2>&1; then
-      if ! git diff --quiet apm.lock.yaml 2>/dev/null; then
+      # Marketplace-publisher repos (zava-agent-config) declare apm.yml for
+      # plugin metadata but pin no dependencies — no apm.lock.yaml is produced.
+      # Only attempt to commit the lockfile when it actually exists.
+      if [[ -f apm.lock.yaml ]] && ! git diff --quiet apm.lock.yaml 2>/dev/null; then
         git -c user.name="Zava Workshop Kit" -c user.email="zava-kit@example.com" \
           commit -m "chore(apm): regenerate lockfile against $ORG plugins" apm.lock.yaml
         echo "  ✅ lockfile regenerated"
-      else
+      elif [[ -f apm.lock.yaml ]]; then
         echo "  ✅ lockfile already current"
+      else
+        echo "  ✅ no apm dependencies — lockfile not needed"
       fi
     else
       echo "  ⚠️  apm install --update failed — push and regenerate manually"
