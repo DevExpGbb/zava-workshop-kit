@@ -49,6 +49,28 @@ The bridge machine needs egress to `github.com` (it's the same host for both sou
 
 ---
 
+## What the script does (in a nutshell)
+
+`bootstrap-emu.sh` is idempotent and dry-run-friendly. In order, it performs five things — nothing else:
+
+1. **Verifies both tokens.** Resolves the user behind each PAT, confirms `GH_TOKEN_SOURCE` can read `DevExpGbb/zava-agent-config`, confirms `GH_TOKEN_TARGET` has `admin:org` on the target EMU org. Fails fast if anything is off.
+2. **Mirrors four repos into the target org.** For each of `zava-agent-config`, `zava-storefront`, `zava-skills-workshop-template`, `poisoned-tracing-skill`: mirror-clones from `DevExpGbb/*` with the source token, creates the target repo at `--visibility=internal` with the target token, `git push --mirror`s the full history + branches + tags, then best-effort enables Actions at the repo level. Already-existing target repos are skipped.
+3. **Rewrites org references in mirrored content.** Replaces `DevExpGbb/` → `YOUR_ORG/` across `*.yml`, `*.yaml`, `*.md`, `*.json` in each mirrored repo. Commits and pushes the rewrite. If the `apm` CLI is present, regenerates `apm.lock.yaml` against the new org's content (otherwise warns and continues).
+4. **Creates the org's `.github` repo and writes `apm-policy.yml`.** Templates `templates/apm-policy.yml` with the target org name and commits it. Any pre-existing `apm-policy.yml` is backed up (`*.bak.YYYYMMDD-HHMMSS`) before being overwritten — unless `--force` is passed, in which case it's overwritten in place.
+5. **Re-pushes the latest release tag of `zava-agent-config`.** `git push --mirror` brings tags over but suppresses workflow events; without this step, the marketplace publish never fires. The re-push triggers `release.yml`.
+
+**What it does NOT do** (relevant for the security review):
+
+- Does not touch any enterprise-level policy (PAT issuance, Actions allowlist, Copilot seats — all owned by `emu-preflight.md` items 1–4).
+- Does not create, modify, or store PATs anywhere on disk.
+- Does not set the org-level `COPILOT_GITHUB_TOKEN` secret (`emu-preflight.md` item 5 — admin runs `gh secret set` manually).
+- Does not delete anything. Tear-down is a separate script (`teardown-emu.sh`) the admin runs deliberately.
+- Does not run any code from the mirrored repos. Mirror-clone is a pure git operation; no `npm install`, no workflow execution, no script sourcing.
+
+**Dry-run is exact.** `--dry-run` prints every API call and git operation without modifying state. Run it first on every new EMU org — the output is the audit trail your security team can review before you run for real.
+
+---
+
 ## Run
 
 ```bash
