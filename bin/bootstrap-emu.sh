@@ -10,7 +10,7 @@
 #
 # Usage:
 #   GH_TOKEN_SOURCE=ghp_personal GH_TOKEN_TARGET=ghp_emu \
-#     ./bin/bootstrap-emu.sh --target-org=lloyds-emu [--visibility=internal]
+#     ./bin/bootstrap-emu.sh --target-org=acme-emu [--visibility=internal]
 #
 # Required env:
 #   GH_TOKEN_SOURCE   PAT on personal/source github.com identity (read on $SOURCE_ORG)

@@ -12,8 +12,8 @@ Treat the EMU enterprise as having two orgs in scope:
 
 | Org | Role | Lifetime |
 |---|---|---|
-| `<customer>-platform` (e.g. `lloyds-platform`) | Holds the 4 mirrored repos at `--visibility=internal`. Read-only for attendees. | Persists across workshops. |
-| `<customer>-workshop-NNNN` (e.g. `lloyds-workshop-2026-05`) | Per-cohort scratch org where attendees template-copy and experiment. | Disposable. Teardown after each cohort. |
+| `<customer>-platform` (e.g. `acme-platform`) | Holds the 4 mirrored repos at `--visibility=internal`. Read-only for attendees. | Persists across workshops. |
+| `<customer>-workshop-NNNN` (e.g. `acme-workshop-2026-05`) | Per-cohort scratch org where attendees template-copy and experiment. | Disposable. Teardown after each cohort. |
 
 Bridge engineer pre-stages **into the platform org once**, days before the workshop. Attendees only ever consume from it.
 

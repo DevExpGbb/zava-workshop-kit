@@ -12,7 +12,7 @@ If your target org is a regular `github.com` org (free, Team, or Enterprise with
 
 EMU enterprises live on `github.com` but are **identity-isolated**:
 
-- EMU users have suffixed handles (e.g. `daniel-meppiel_lloyds`)
+- EMU users have suffixed handles (e.g. `daniel-meppiel_acme`)
 - EMU users **cannot** see public `github.com` repos — `gh repo fork DevExpGbb/...` is impossible
 - EMU orgs **cannot** have `public` visibility — only `internal` (visible across the enterprise) or `private`
 - EMU runners may have a restricted **GitHub Actions allowlist**; `actions/checkout@v4` and other GitHub-owned actions must be on it
@@ -28,7 +28,7 @@ The fix is the **bridge engineer model**: one engineer holds **two PATs** on the
 | Token | Identity | Required scopes | Used for |
 |---|---|---|---|
 | `GH_TOKEN_SOURCE` | Personal `github.com` (e.g. `danielmeppiel`) | `repo` (read) | Mirror-cloning `DevExpGbb/*` |
-| `GH_TOKEN_TARGET` | EMU identity (e.g. `daniel-meppiel_lloyds`) | `repo`, `workflow`, `admin:org`, `delete_repo` | Creating, pushing, configuring the EMU org |
+| `GH_TOKEN_TARGET` | EMU identity (e.g. `daniel-meppiel_acme`) | `repo`, `workflow`, `admin:org`, `delete_repo` | Creating, pushing, configuring the EMU org |
 
 Generate each one in its own browser session (or incognito), since both live on `github.com` but require different logins.
 
