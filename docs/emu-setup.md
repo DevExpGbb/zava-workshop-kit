@@ -4,6 +4,8 @@ This is the **EMU (Enterprise Managed Users)** deployment path. Use this if you'
 
 If your target org is a regular `github.com` org (free, Team, or Enterprise without EMU), use [`bin/bootstrap.sh`](../bin/bootstrap.sh) instead.
 
+> ⚠️ **Read [`emu-preflight.md`](emu-preflight.md) FIRST** — it lists five enterprise-level settings (PAT issuance policy, Copilot seat, Actions allowlist, runner egress, org-secret visibility) that an enterprise admin must verify 5–7 days before the workshop. Items 1–4 cannot be fixed by this bootstrap script; they require enterprise-admin UI access. Discovering them on workshop morning will block delivery.
+
 ---
 
 ## What's different about EMU
@@ -85,7 +87,7 @@ GH_TOKEN_TARGET=$GH_TOKEN_TARGET ./bin/teardown-emu.sh --target-org=YOUR_EMU_ORG
 
 2. **Marketplace.json contains `https://github.com/DevExpGbb/...` raw URLs.** The bootstrap rewrites `DevExpGbb/` → `$TARGET_ORG/` (org slug only — the host stays `github.com` for both EMU and public). Verify after bootstrap by `gh api repos/$TARGET_ORG/zava-agent-config/contents/marketplace.json`.
 
-3. **`COPILOT_GITHUB_TOKEN` must be EMU-issued.** A personal `github.com` PAT will not authenticate as the EMU service identity. The org admin must mint this on an EMU member account with `repo` + `workflow` scopes.
+3. **`COPILOT_GITHUB_TOKEN` must be a fine-grained PAT issued by an EMU member account.** Per the [upstream `gh aw` auth reference](https://github.github.com/gh-aw/reference/auth/#copilot_github_token): resource owner = **user account** (not org), single permission `Account → Copilot Requests: Read`, token owner has an active Copilot seat. Classic PATs and org-owned PATs do not work. On EMU enterprises, fine-grained PAT issuance is often disabled at the enterprise level by default — check **Enterprise → Policies → Personal access tokens** before the workshop and allow the EMU group that will own this token. See [`docs/emu-preflight.md`](emu-preflight.md) for the full checklist.
 
 4. **Actions policy is enterprise-level, not org-level.** The bootstrap's `actions/permissions` PUT only enables Actions at the **repo** level; the enterprise-level allowlist is unchanged. Confirm with your platform team before the workshop.
 

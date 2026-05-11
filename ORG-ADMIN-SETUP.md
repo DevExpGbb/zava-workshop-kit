@@ -35,11 +35,12 @@ In **Settings → Copilot**:
 The org needs two tokens. Both are created under **a single user account** (typically you, the admin) and stored as **org-level secrets**. See [`docs/tokens.md`](docs/tokens.md) for screenshots.
 
 ### `COPILOT_GITHUB_TOKEN`
-- **Type:** Fine-grained PAT
-- **Resource owner:** your org
-- **Repository access:** all repositories
-- **Permissions:** `Contents: Read+Write`, `Issues: Read+Write`, `Pull requests: Read+Write`, `Workflows: Read+Write`
-- **Used by:** `gh aw` workflows to invoke Copilot agents
+- **Type:** Fine-grained PAT ([upstream spec](https://github.github.com/gh-aw/reference/auth/#copilot_github_token))
+- **Resource owner: a user account** (NOT the org — `Copilot Requests` is account-level and hidden on org-owned PATs)
+- **Repository access:** Public repositories (read-only) — this PAT does not touch repos
+- **Permissions:** `Account → Copilot Requests: Read` (and nothing else)
+- **Token owner:** must have an active Copilot Business/Enterprise seat
+- **Used by:** `gh aw` workflows to authenticate the Copilot CLI inference call
 
 ### `GH_AW_PLUGINS_TOKEN`
 - **Type:** Fine-grained PAT

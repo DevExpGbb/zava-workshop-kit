@@ -4,29 +4,23 @@ The workshop needs **two** Personal Access Tokens, both stored as **org-level se
 
 ## `COPILOT_GITHUB_TOKEN`
 
-The `gh aw` workflows (PR Review Panel, Triage Panel, etc.) invoke Copilot agents on your behalf. They need a token that can:
+`gh aw` workflows that run with `engine: copilot` need this token to authenticate the Copilot CLI for inference. Per the [upstream `gh aw` auth reference](https://github.github.com/gh-aw/reference/auth/#copilot_github_token), it must be a **fine-grained PAT** with exactly one permission. GitHub Apps, OAuth tokens, and classic PATs are not supported for this secret.
 
-- Read code and PR metadata
-- Post review comments and create branches
-- Trigger workflows and read workflow status
+The token does **not** need repo, workflow, or any other scope — `GITHUB_TOKEN` already covers everything else the compiled workflow does. The only thing this PAT authenticates is the Copilot inference call.
 
 ### Recipe
 
-1. Go to **Settings → Developer settings → Personal access tokens → Fine-grained tokens** under the user account that should "own" the workshop bot identity (often the org owner).
-2. Click **Generate new token**.
-3. Configure:
-   - **Token name:** `zava-workshop-copilot`
-   - **Expiration:** 90 days (rotate for production workshops)
-   - **Resource owner:** *YOUR_ORG*
-   - **Repository access:** All repositories
-   - **Permissions → Repository:**
-     - `Contents`: Read+Write
-     - `Issues`: Read+Write
-     - `Pull requests`: Read+Write
-     - `Workflows`: Read+Write
-     - `Actions`: Read
-     - `Metadata`: Read (auto)
-4. Generate, copy the value.
+1. Open the pre-filled link (it sets the name, description, and permission for you):
+
+   <https://github.com/settings/personal-access-tokens/new?name=COPILOT_GITHUB_TOKEN&description=GitHub+Agentic+Workflows+-+Copilot+engine+authentication&user_copilot_requests=read>
+
+2. Verify before generating:
+   - **Resource owner: your user account** (NOT an org — `Copilot Requests` is an account-level permission and is hidden on org-owned fine-grained PATs).
+   - **Repository access:** Public repositories (read-only) is fine — this PAT does not touch repos.
+   - **Permissions → Account → Copilot Requests: Read** — and nothing else.
+   - **Expiration:** 90 days (rotate for production workshops).
+3. Generate, copy the value.
+4. The token owner's account **must have an active Copilot Business/Enterprise seat**, otherwise inference fails with `403 Resource not accessible by personal access token`.
 5. Set as org secret: `gh secret set COPILOT_GITHUB_TOKEN --org YOUR_ORG --visibility=all`
 
 ## `GH_AW_PLUGINS_TOKEN`

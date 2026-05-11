@@ -21,6 +21,8 @@ Bridge engineer pre-stages **into the platform org once**, days before the works
 
 ## T-7 days — pre-stage the platform org
 
+> ⚠️ Before running the bootstrap, confirm the five enterprise-level prerequisites in [`emu-preflight.md`](emu-preflight.md): fine-grained PAT issuance policy, Copilot seat for the PAT owner, Actions allowlist (including `github/gh-aw/actions/setup-cli` and `microsoft/apm-action`), runner egress, and the org-secret visibility plan. The bootstrap script cannot fix any of these — they require enterprise-admin UI access. Discovering them on workshop morning blocks delivery.
+
 Run from your bridge machine (laptop with both PATs available):
 
 ```bash
@@ -37,9 +39,9 @@ If `bootstrap-emu.sh` partially completes or fails: drop to the [manual mirror c
 
 ### One-time admin steps (script can't do these — they need org-owner UI access)
 
-1. **Set `COPILOT_GITHUB_TOKEN` org secret** on `<customer>-platform`. The PAT must be issued by an EMU member account, scopes: `repo`, `workflow`. Verify in Settings → Secrets → Actions → Organization secrets.
+1. **Set `COPILOT_GITHUB_TOKEN` org secret** on `<customer>-platform`. Must be a **fine-grained PAT** issued by an EMU member account, **resource owner = that user account** (not the org), single permission `Account → Copilot Requests: Read`, owner has an active Copilot seat. Classic PATs do not work. See [`docs/emu-preflight.md`](emu-preflight.md) for the full checklist and the enterprise PAT-policy gate. Verify in Settings → Secrets → Actions → Organization secrets.
 2. **Set `COPILOT_GITHUB_TOKEN` org secret** also on `<customer>-workshop-NNNN` (or hand attendees instructions to set it on their own forks if your enterprise prefers per-repo secrets).
-3. **Confirm enterprise Actions allowlist** permits at minimum: `actions/checkout`, `actions/setup-node`, `actions/upload-artifact`, `actions/github-script`. Confirm with the enterprise platform team — most enterprises permit GitHub-owned actions by default.
+3. **Confirm enterprise Actions allowlist** permits at minimum: `actions/checkout`, `actions/setup-node`, `actions/upload-artifact`, `actions/github-script`, **`github/gh-aw/actions/setup-cli`**, **`microsoft/apm-action`**. The last two are gh-aw / APM specific and often missed when platform teams only think of "GitHub-owned" actions. See [`emu-preflight.md`](emu-preflight.md) item 3.
 
 ---
 
